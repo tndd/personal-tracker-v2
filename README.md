@@ -1,11 +1,12 @@
 # personal-tracker-v2
 
-Flutter を用いて再構築するローカルファースト型の健康管理アプリです。既存の Next.js + PostgreSQL 実装で提供されている「カテゴリ／タグ管理」「トラック記録」「日記」「統計分析」の機能を、単一コードベースで Desktop / Android / iOS（任意） / Web へ展開できるようにすることを目的としています。
+Flutter で構築するローカルファースト型の健康管理アプリです。「カテゴリ／タグ管理」「トラック記録」「日記」「統計分析」の機能を提供し、単一コードベースで Desktop / Android / iOS（任意） / Web へ展開します。
 
-## 背景と狙い
-- 現行 Web 版は SSR と API Routes、外部 PostgreSQL への永続化を前提としており、オフライン環境では利用できません。
-- 本リポジトリではローカル DB を前提とした Flutter アプリを新規実装し、既存仕様を踏襲しつつマルチプラットフォーム対応を実現します。
-- 必須要件はデバイス内完結のデータ保持と、既存仕様（`docs/specification/*.md`）で定義されている振る舞いの再現です。
+## 特徴
+- **オフライン完結**: 外部サーバーに依存せず、デバイス内で完結するデータ保持
+- **マルチプラットフォーム**: Desktop（macOS / Windows / Linux）、Android、Web、iOS（任意）
+- **ローカルDB**: SQLite によるデータ永続化
+- **バックアップ/リストア**: JSON エクスポート/インポート機能
 
 ## 技術スタック（想定）
 - **言語 / SDK**: Flutter 3.24 以降, Dart 3.5 以降
@@ -74,9 +75,17 @@ flutter test integration_test   # 主要 E2E フロー（Playwright 代替）
 ```
 
 ## ドキュメント
-- `docs/requirements.md`: 実装要件定義書。本 README と併せて参照してください。
-- `docs/architecture/`（今後追加予定）: 実装詳細・設計補足
 
-## メモ
-- 既存 Next.js 実装の API/DB 仕様は `../personal_tracker/docs/specification/` にまとまっています。Flutter 実装ではこれらのバリデーションルールやデータ構造を Drift スキーマとドメイン層で再現します。
-- データは端末内 SQLite へ保存し、エクスポート/インポート機能でバックアップを提供します（詳細は requirements.md を参照）。
+本プロジェクトのドキュメントは `docs/` ディレクトリに配置されています。
+
+### 主要ドキュメント
+- **[docs/requirements.md](docs/requirements.md)** - 実装要件定義書
+- **[docs/schema.md](docs/schema.md)** - データベーススキーマ定義
+- **[docs/validation.md](docs/validation.md)** - バリデーションルール
+- **[docs/repository_spec.md](docs/repository_spec.md)** - Repository仕様
+- **[docs/ui_behavior.md](docs/ui_behavior.md)** - UI挙動の設計意図
+
+### UIデザイン参考
+- **[docs/ui_images/](docs/ui_images/)** - UIデザインのスクリーンショット
+
+詳細は **[docs/README.md](docs/README.md)** を参照してください。

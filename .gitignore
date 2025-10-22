@@ -1,0 +1,46 @@
+# Dart / Flutter
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.melos_tool/
+.pub-cache/
+
+# IDE / Editors
+.idea/
+.vscode/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Platform-specific
+android/.gradle/
+android/app/build/
+android/local.properties
+android/key.properties
+ios/Pods/
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+windows/
+linux/
+macos/
+
+# Logs and temp
+*.log
+*.tmp
+*.swp
+*.lock
+
+# Flutter Web
+flutter_service_worker.js
+build/web/
