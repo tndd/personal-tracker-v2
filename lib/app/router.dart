@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/tag/ui/tags_page.dart';
+import '../features/tag/ui/archived_tags_page.dart';
 import 'scaffold_with_nav.dart';
 
 /// アプリケーション全体のルーティング設定。
@@ -24,7 +26,7 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/tags',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: _PlaceholderPage(title: 'Tags'),
+            child: TagsPage(),
           ),
         ),
         GoRoute(
@@ -49,7 +51,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/tags/archived',
-      builder: (context, state) => const _PlaceholderPage(title: 'Archived'),
+      builder: (context, state) => const ArchivedTagsPage(),
     ),
   ],
 );
