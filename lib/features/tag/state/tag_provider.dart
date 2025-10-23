@@ -29,6 +29,26 @@ final tagListByCategoryProvider = StateNotifierProvider.family<
   },
 );
 
+/// カテゴリ別タグ一覧（アーカイブ含む）のProvider。
+///
+/// 使用例:
+/// ```dart
+/// final tags = ref.watch(archivedTagListByCategoryProvider('category-id'));
+/// ```
+final archivedTagListByCategoryProvider = StateNotifierProvider.family<
+    TagStateNotifier,
+    AsyncValue<List<TagRecord>>,
+    String>(
+  (ref, categoryId) {
+    final repository = ref.watch(tagRepositoryProvider);
+    return TagStateNotifier(
+      repository,
+      categoryId: categoryId,
+      includeArchived: true,
+    );
+  },
+);
+
 /// 全タグ一覧（アーカイブ除外、カテゴリ横断）のProvider。
 ///
 /// 使用例:
