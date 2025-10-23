@@ -158,11 +158,34 @@ class _CategorySection extends ConsumerWidget {
                       return const Text('タグがありません');
                     }
                     return Column(
-                      children: tags.map((tag) {
+                      children: tags.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final tag = entry.value;
+                        final isFirst = index == 0;
+                        final isLast = index == tags.length - 1;
+
                         return _TagItem(
                           tag: tag,
                           categoryColor: category.color,
                           categoryName: category.name,
+                          isFirst: isFirst,
+                          isLast: isLast,
+                          onMoveUp: isFirst ? null : () {
+                            final orderedIds = tags.map((t) => t.id).toList();
+                            final temp = orderedIds[index];
+                            orderedIds[index] = orderedIds[index - 1];
+                            orderedIds[index - 1] = temp;
+                            ref.read(tagListByCategoryProvider(category.id).notifier)
+                                .reorderTags(orderedIds);
+                          },
+                          onMoveDown: isLast ? null : () {
+                            final orderedIds = tags.map((t) => t.id).toList();
+                            final temp = orderedIds[index];
+                            orderedIds[index] = orderedIds[index + 1];
+                            orderedIds[index + 1] = temp;
+                            ref.read(tagListByCategoryProvider(category.id).notifier)
+                                .reorderTags(orderedIds);
+                          },
                         );
                       }).toList(),
                     );
@@ -209,11 +232,19 @@ class _TagItem extends ConsumerWidget {
     required this.tag,
     required this.categoryColor,
     required this.categoryName,
+    required this.isFirst,
+    required this.isLast,
+    this.onMoveUp,
+    this.onMoveDown,
   });
 
   final TagRecord tag;
   final String categoryColor;
   final String categoryName;
+  final bool isFirst;
+  final bool isLast;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -233,6 +264,18 @@ class _TagItem extends ConsumerWidget {
               tag.name,
               style: TextStyle(color: color, fontWeight: FontWeight.w500),
             ),
+          ),
+          // 上移動ボタン
+          IconButton(
+            icon: const Icon(Icons.arrow_upward, size: 20),
+            onPressed: onMoveUp,
+            tooltip: '上へ移動',
+          ),
+          // 下移動ボタン
+          IconButton(
+            icon: const Icon(Icons.arrow_downward, size: 20),
+            onPressed: onMoveDown,
+            tooltip: '下へ移動',
           ),
           // 編集ボタン
           IconButton(
