@@ -235,6 +235,30 @@ Future<void> reorderTags({
 
 ---
 
+### deleteTag
+
+タグを削除（アーカイブ画面でのみ実行可能）。
+
+```dart
+Future<void> deleteTag(String id);
+```
+
+**処理:**
+1. 指定されたタグをTagsテーブルから削除
+2. **全Trackの `tagIds` から該当IDを即座にクリーンアップ**
+   - 全Trackをスキャンし、削除されたタグIDを配列から除外
+   - `updatedAt` を更新
+
+**例:**
+```dart
+// タグ削除
+await tagRepo.deleteTag('tag-id-123');
+
+// 削除後、全Trackの tagIds から 'tag-id-123' が自動的に除外される
+```
+
+---
+
 ## TrackRepository
 
 ### searchTracks
@@ -253,13 +277,13 @@ Future<List<TrackRecord>> searchTracks({
 
 **パラメータ:**
 - `limit`: 取得件数（デフォルト: 50）
-- `before`: この日時より前のレコードを取得（ページング用）
+- `before`: この日時より前のレコードを取得（ページング用、`recordedAt` 基準）
 - `memoKeyword`: メモの部分一致検索
 - `tagIds`: タグIDでフィルタ（OR条件）
 - `condition`: コンディションでフィルタ
 
 **戻り値:**
-- `createdAt` の降順でソート済みのトラックリスト
+- `recordedAt` の降順でソート済みのトラックリスト
 
 **例:**
 ```dart
@@ -269,7 +293,7 @@ final tracks = await repo.searchTracks(limit: 50);
 // 過去を遡る（ページング）
 final older = await repo.searchTracks(
   limit: 50,
-  before: tracks.last.createdAt,
+  before: tracks.last.recordedAt,
 );
 
 // タグでフィルタ
@@ -289,6 +313,7 @@ Future<TrackRecord> createTrack({
   String? memo,
   int condition = 0,
   List<String> tagIds = const [],
+  DateTime? recordedAt,
 });
 ```
 
@@ -296,9 +321,11 @@ Future<TrackRecord> createTrack({
 - `memo`: メモ（最大1000文字、省略可）
 - `condition`: コンディション（-2〜2、デフォルト: 0）
 - `tagIds`: タグIDリスト
+- `recordedAt`: 記録日時（省略時は現在時刻）
 
 **処理:**
 - UUID v7を生成
+- `recordedAt` をパラメータまたは現在時刻に設定
 - `createdAt`, `updatedAt` に現在時刻を設定
 - 存在しないタグIDは除外して保存
 
@@ -314,8 +341,21 @@ Future<TrackRecord> updateTrack({
   String? memo,
   int? condition,
   List<String>? tagIds,
+  DateTime? recordedAt,
 });
 ```
+
+**パラメータ:**
+- `id`: 更新対象のトラックID
+- `memo`: 新しいメモ（省略可）
+- `condition`: 新しいコンディション（省略可）
+- `tagIds`: 新しいタグIDリスト（省略可）
+- `recordedAt`: 新しい記録日時（省略可、過去日時への変更可能）
+
+**処理:**
+- `updatedAt` を現在時刻に更新
+- 指定されたフィールドのみ更新
+- 存在しないタグIDは除外して保存
 
 ---
 
