@@ -126,7 +126,7 @@ class TagStateNotifier extends StateNotifier<AsyncValue<List<TagRecord>>> {
           .entries
           .map((e) => (id: e.value, sortOrder: e.key))
           .toList();
-      await _repository.reorderTags(categoryId: _categoryId, reorderedTags: items);
+      await _repository.reorderTags(categoryId: _categoryId, items: items);
       await _loadTags();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -157,7 +157,9 @@ class AllTagsStateNotifier extends StateNotifier<AsyncValue<List<TagRecord>>> {
 
   Future<void> _loadTags() async {
     try {
-      final tags = await _repository.searchTags(includeArchived: _includeArchived);
+      // 全カテゴリのタグを取得するため、categoryIdは空文字列で全件検索
+      // TODO: Repository側で全件取得メソッドを追加する方が良い
+      final tags = await _repository.searchTags(categoryId: '', includeArchived: _includeArchived);
       state = AsyncValue.data(tags);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

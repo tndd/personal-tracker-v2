@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/db/database.dart';
 import '../../category/state/category_provider.dart';
 import '../../category/ui/category_dialog.dart';
+import '../state/tag_provider.dart';
+import 'tag_dialog.dart';
 
 /// Tags画面（カテゴリとタグの管理）。
 ///
@@ -91,13 +93,15 @@ class TagsPage extends ConsumerWidget {
 }
 
 /// カテゴリセクション（アコーディオン形式）。
-class _CategorySection extends StatelessWidget {
+class _CategorySection extends ConsumerWidget {
   const _CategorySection({required this.category});
 
   final CategoryRecord category;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tagsAsync = ref.watch(tagListByCategoryProvider(category.id));
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: ExpansionTile(
@@ -109,10 +113,13 @@ class _CategorySection extends StatelessWidget {
           children: [
             Text(category.name),
             const SizedBox(width: 8),
-            // TODO: タグ数を表示
-            Text(
-              '(0)',
-              style: Theme.of(context).textTheme.bodySmall,
+            tagsAsync.when(
+              data: (tags) => Text(
+                '(${tags.length})',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              loading: () => const Text('(...)'),
+              error: (_, __) => const Text('(?)'),
             ),
           ],
         ),
@@ -144,19 +151,98 @@ class _CategorySection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // TODO: タグ一覧を表示
-                const Text('タグがありません'),
+                // タグ一覧
+                tagsAsync.when(
+                  data: (tags) {
+                    if (tags.isEmpty) {
+                      return const Text('タグがありません');
+                    }
+                    return Column(
+                      children: tags.map((tag) {
+                        return _TagItem(tag: tag, categoryColor: category.color);
+                      }).toList(),
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, _) => Text('エラー: $error'),
+                ),
                 const SizedBox(height: 8),
                 // タグ追加ボタン
                 TextButton.icon(
                   onPressed: () {
-                    // TODO: タグ追加ダイアログ
+                    showDialog(
+                      context: context,
+                      builder: (context) => TagDialog(
+                        categoryId: category.id,
+                        categoryName: category.name,
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.add),
                   label: const Text('タグ追加'),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _parseColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 7) {
+      buffer.write('ff');
+      buffer.write(hexString.substring(1));
+    }
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+}
+
+/// タグアイテム。
+class _TagItem extends StatelessWidget {
+  const _TagItem({
+    required this.tag,
+    required this.categoryColor,
+  });
+
+  final TagRecord tag;
+  final String categoryColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _parseColor(categoryColor);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              tag.name,
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
+            ),
+          ),
+          // 編集ボタン
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            onPressed: () {
+              // TODO: タグ編集ダイアログ
+            },
+            tooltip: '編集',
+          ),
+          // アーカイブボタン
+          IconButton(
+            icon: const Icon(Icons.archive_outlined, size: 20),
+            onPressed: () {
+              // TODO: アーカイブ確認ダイアログ
+            },
+            tooltip: 'アーカイブ',
           ),
         ],
       ),
