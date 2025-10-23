@@ -66,7 +66,28 @@ class TagsPage extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
-                    return _CategorySection(category: categories[index]);
+                    final isFirst = index == 0;
+                    final isLast = index == categories.length - 1;
+
+                    return _CategorySection(
+                      category: categories[index],
+                      isFirst: isFirst,
+                      isLast: isLast,
+                      onMoveUp: isFirst ? null : () {
+                        final orderedIds = categories.map((c) => c.id).toList();
+                        final temp = orderedIds[index];
+                        orderedIds[index] = orderedIds[index - 1];
+                        orderedIds[index - 1] = temp;
+                        ref.read(categoryNotifierProvider).reorderCategories(orderedIds);
+                      },
+                      onMoveDown: isLast ? null : () {
+                        final orderedIds = categories.map((c) => c.id).toList();
+                        final temp = orderedIds[index];
+                        orderedIds[index] = orderedIds[index + 1];
+                        orderedIds[index + 1] = temp;
+                        ref.read(categoryNotifierProvider).reorderCategories(orderedIds);
+                      },
+                    );
                   },
                 );
               },
@@ -94,9 +115,19 @@ class TagsPage extends ConsumerWidget {
 
 /// カテゴリセクション（アコーディオン形式）。
 class _CategorySection extends ConsumerWidget {
-  const _CategorySection({required this.category});
+  const _CategorySection({
+    required this.category,
+    required this.isFirst,
+    required this.isLast,
+    this.onMoveUp,
+    this.onMoveDown,
+  });
 
   final CategoryRecord category;
+  final bool isFirst;
+  final bool isLast;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,6 +157,16 @@ class _CategorySection extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_upward),
+              onPressed: onMoveUp,
+              tooltip: '上へ移動',
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_downward),
+              onPressed: onMoveDown,
+              tooltip: '下へ移動',
+            ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: () {
