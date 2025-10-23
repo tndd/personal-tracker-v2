@@ -1,22 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// エントリーポイント。現時点ではバックエンド実装が中心のため、
-/// シンプルなプレースホルダー画面のみを表示する。
-void main() {
-  runApp(const _PlaceholderApp());
+import 'app/providers.dart';
+import 'app/router.dart';
+import 'app/theme.dart';
+
+/// アプリケーションのエントリーポイント。
+///
+/// データベースを初期化し、Riverpodのプロバイダーをオーバーライドしてアプリを起動する。
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // データベースを初期化
+  final database = await initializeDatabase();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class _PlaceholderApp extends StatelessWidget {
-  const _PlaceholderApp();
+/// アプリケーションのルートウィジェット。
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('personal-tracker-v2 backend-in-progress'),
-        ),
-      ),
+    return MaterialApp.router(
+      title: 'Personal Tracker',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
