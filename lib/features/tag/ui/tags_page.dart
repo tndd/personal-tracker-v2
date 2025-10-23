@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/db/database.dart';
 import '../../category/state/category_provider.dart';
+import '../../category/ui/category_dialog.dart';
 
 /// Tags画面（カテゴリとタグの管理）。
 ///
@@ -38,7 +39,10 @@ class TagsPage extends ConsumerWidget {
           // カテゴリ追加ボタン
           FilledButton.icon(
             onPressed: () {
-              // TODO: カテゴリ追加ダイアログを表示
+              showDialog(
+                context: context,
+                builder: (context) => const CategoryDialog(),
+              );
             },
             icon: const Icon(Icons.add),
             label: const Text('カテゴリ 追加'),
@@ -118,7 +122,10 @@ class _CategorySection extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: () {
-                // TODO: カテゴリ編集ダイアログ
+                showDialog(
+                  context: context,
+                  builder: (context) => CategoryDialog(category: category),
+                );
               },
               tooltip: '編集',
             ),
