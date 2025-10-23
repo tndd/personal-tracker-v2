@@ -96,7 +96,10 @@ class Tracks extends Table {
   /// タグIDのJSON配列（例: ["id1","id2"]）
   TextColumn get tagIds => text().map(const StringListConverter())();
 
-  /// 記録日時（UTC）
+  /// 記録日時（UTC、ユーザーが記録した時刻）
+  DateTimeColumn get recordedAt => dateTime()();
+
+  /// 作成日時（UTC、レコード作成時に自動設定）
   DateTimeColumn get createdAt => dateTime()();
 
   /// 更新日時（UTC）

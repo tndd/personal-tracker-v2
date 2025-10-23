@@ -843,6 +843,12 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, TrackRecord> {
       GeneratedColumn<String>('tag_ids', aliasedName, false,
               type: DriftSqlType.string, requiredDuringInsert: true)
           .withConverter<List<String>>($TracksTable.$convertertagIds);
+  static const VerificationMeta _recordedAtMeta =
+      const VerificationMeta('recordedAt');
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+      'recorded_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -857,7 +863,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, TrackRecord> {
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, memo, condition, tagIds, createdAt, updatedAt];
+      [id, memo, condition, tagIds, recordedAt, createdAt, updatedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -880,6 +886,14 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, TrackRecord> {
     if (data.containsKey('condition')) {
       context.handle(_conditionMeta,
           condition.isAcceptableOrUnknown(data['condition']!, _conditionMeta));
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+          _recordedAtMeta,
+          recordedAt.isAcceptableOrUnknown(
+              data['recorded_at']!, _recordedAtMeta));
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -910,6 +924,8 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, TrackRecord> {
           .read(DriftSqlType.int, data['${effectivePrefix}condition'])!,
       tagIds: $TracksTable.$convertertagIds.fromSql(attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}tag_ids'])!),
+      recordedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}recorded_at'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -939,7 +955,10 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
   /// タグIDのJSON配列（例: ["id1","id2"]）
   final List<String> tagIds;
 
-  /// 記録日時（UTC）
+  /// 記録日時（UTC、ユーザーが記録した時刻）
+  final DateTime recordedAt;
+
+  /// 作成日時（UTC、レコード作成時に自動設定）
   final DateTime createdAt;
 
   /// 更新日時（UTC）
@@ -949,6 +968,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
       this.memo,
       required this.condition,
       required this.tagIds,
+      required this.recordedAt,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -963,6 +983,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
       map['tag_ids'] =
           Variable<String>($TracksTable.$convertertagIds.toSql(tagIds));
     }
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -974,6 +995,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
       memo: memo == null && nullToAbsent ? const Value.absent() : Value(memo),
       condition: Value(condition),
       tagIds: Value(tagIds),
+      recordedAt: Value(recordedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -987,6 +1009,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
       memo: serializer.fromJson<String?>(json['memo']),
       condition: serializer.fromJson<int>(json['condition']),
       tagIds: serializer.fromJson<List<String>>(json['tagIds']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -999,6 +1022,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
       'memo': serializer.toJson<String?>(memo),
       'condition': serializer.toJson<int>(condition),
       'tagIds': serializer.toJson<List<String>>(tagIds),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1009,6 +1033,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
           Value<String?> memo = const Value.absent(),
           int? condition,
           List<String>? tagIds,
+          DateTime? recordedAt,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       TrackRecord(
@@ -1016,6 +1041,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
         memo: memo.present ? memo.value : this.memo,
         condition: condition ?? this.condition,
         tagIds: tagIds ?? this.tagIds,
+        recordedAt: recordedAt ?? this.recordedAt,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -1025,6 +1051,8 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
       memo: data.memo.present ? data.memo.value : this.memo,
       condition: data.condition.present ? data.condition.value : this.condition,
       tagIds: data.tagIds.present ? data.tagIds.value : this.tagIds,
+      recordedAt:
+          data.recordedAt.present ? data.recordedAt.value : this.recordedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1037,6 +1065,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
           ..write('memo: $memo, ')
           ..write('condition: $condition, ')
           ..write('tagIds: $tagIds, ')
+          ..write('recordedAt: $recordedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1044,8 +1073,8 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, memo, condition, tagIds, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id, memo, condition, tagIds, recordedAt, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1054,6 +1083,7 @@ class TrackRecord extends DataClass implements Insertable<TrackRecord> {
           other.memo == this.memo &&
           other.condition == this.condition &&
           other.tagIds == this.tagIds &&
+          other.recordedAt == this.recordedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1063,6 +1093,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
   final Value<String?> memo;
   final Value<int> condition;
   final Value<List<String>> tagIds;
+  final Value<DateTime> recordedAt;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1071,6 +1102,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
     this.memo = const Value.absent(),
     this.condition = const Value.absent(),
     this.tagIds = const Value.absent(),
+    this.recordedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1080,11 +1112,13 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
     this.memo = const Value.absent(),
     this.condition = const Value.absent(),
     required List<String> tagIds,
+    required DateTime recordedAt,
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         tagIds = Value(tagIds),
+        recordedAt = Value(recordedAt),
         createdAt = Value(createdAt),
         updatedAt = Value(updatedAt);
   static Insertable<TrackRecord> custom({
@@ -1092,6 +1126,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
     Expression<String>? memo,
     Expression<int>? condition,
     Expression<String>? tagIds,
+    Expression<DateTime>? recordedAt,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1101,6 +1136,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
       if (memo != null) 'memo': memo,
       if (condition != null) 'condition': condition,
       if (tagIds != null) 'tag_ids': tagIds,
+      if (recordedAt != null) 'recorded_at': recordedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1112,6 +1148,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
       Value<String?>? memo,
       Value<int>? condition,
       Value<List<String>>? tagIds,
+      Value<DateTime>? recordedAt,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -1120,6 +1157,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
       memo: memo ?? this.memo,
       condition: condition ?? this.condition,
       tagIds: tagIds ?? this.tagIds,
+      recordedAt: recordedAt ?? this.recordedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1142,6 +1180,9 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
       map['tag_ids'] =
           Variable<String>($TracksTable.$convertertagIds.toSql(tagIds.value));
     }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1161,6 +1202,7 @@ class TracksCompanion extends UpdateCompanion<TrackRecord> {
           ..write('memo: $memo, ')
           ..write('condition: $condition, ')
           ..write('tagIds: $tagIds, ')
+          ..write('recordedAt: $recordedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2179,6 +2221,7 @@ typedef $$TracksTableCreateCompanionBuilder = TracksCompanion Function({
   Value<String?> memo,
   Value<int> condition,
   required List<String> tagIds,
+  required DateTime recordedAt,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -2188,6 +2231,7 @@ typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<String?> memo,
   Value<int> condition,
   Value<List<String>> tagIds,
+  Value<DateTime> recordedAt,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -2215,6 +2259,9 @@ class $$TracksTableFilterComposer
       get tagIds => $composableBuilder(
           column: $table.tagIds,
           builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -2244,6 +2291,9 @@ class $$TracksTableOrderingComposer
   ColumnOrderings<String> get tagIds => $composableBuilder(
       column: $table.tagIds, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -2271,6 +2321,9 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<List<String>, String> get tagIds =>
       $composableBuilder(column: $table.tagIds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+      column: $table.recordedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2306,6 +2359,7 @@ class $$TracksTableTableManager extends RootTableManager<
             Value<String?> memo = const Value.absent(),
             Value<int> condition = const Value.absent(),
             Value<List<String>> tagIds = const Value.absent(),
+            Value<DateTime> recordedAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -2315,6 +2369,7 @@ class $$TracksTableTableManager extends RootTableManager<
             memo: memo,
             condition: condition,
             tagIds: tagIds,
+            recordedAt: recordedAt,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -2324,6 +2379,7 @@ class $$TracksTableTableManager extends RootTableManager<
             Value<String?> memo = const Value.absent(),
             Value<int> condition = const Value.absent(),
             required List<String> tagIds,
+            required DateTime recordedAt,
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -2333,6 +2389,7 @@ class $$TracksTableTableManager extends RootTableManager<
             memo: memo,
             condition: condition,
             tagIds: tagIds,
+            recordedAt: recordedAt,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

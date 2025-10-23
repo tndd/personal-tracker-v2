@@ -35,12 +35,12 @@ class TrackRepository {
   ///
   /// パラメータ:
   /// - limit: 取得件数（デフォルト: 50）
-  /// - before: この日時より前のレコードを取得（ページング用）
+  /// - before: この日時より前のレコードを取得（ページング用、recordedAt基準）
   /// - memoKeyword: メモの部分一致検索
   /// - tagIds: タグIDでフィルタ（OR条件）
   /// - condition: コンディションでフィルタ
   ///
-  /// 戻り値: createdAtの降順でソート済みのトラックリスト
+  /// 戻り値: recordedAtの降順でソート済みのトラックリスト
   Future<List<TrackRecord>> searchTracks({
     int limit = 50,
     DateTime? before,
@@ -50,9 +50,9 @@ class TrackRepository {
   }) async {
     final query = _db.select(_db.tracks);
 
-    // beforeフィルタ
+    // beforeフィルタ（recordedAt基準）
     if (before != null) {
-      query.where((t) => t.createdAt.isSmallerThanValue(before));
+      query.where((t) => t.recordedAt.isSmallerThanValue(before));
     }
 
     // memoキーワードフィルタ
@@ -78,9 +78,9 @@ class TrackRepository {
       });
     }
 
-    // 降順ソート、limit適用
+    // recordedAtで降順ソート、limit適用
     query
-      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+      ..orderBy([(t) => OrderingTerm.desc(t.recordedAt)])
       ..limit(limit);
 
     return await query.get();
@@ -92,9 +92,11 @@ class TrackRepository {
   /// - memo: メモ（最大1000文字、省略可）
   /// - condition: コンディション（-2〜2、デフォルト: 0）
   /// - tagIds: タグIDリスト
+  /// - recordedAt: 記録日時（省略時は現在時刻）
   ///
   /// 処理:
   /// - UUID v7を生成
+  /// - recordedAtをパラメータまたは現在時刻に設定
   /// - createdAt, updatedAtに現在時刻を設定
   /// - 存在しないタグIDは除外して保存
   ///
@@ -104,6 +106,7 @@ class TrackRepository {
     String? memo,
     int condition = 0,
     List<String> tagIds = const [],
+    DateTime? recordedAt,
   }) async {
     // バリデーション
     final memoError = validateTrackMemo(memo);
@@ -127,6 +130,7 @@ class TrackRepository {
       memo: Value(memo),
       condition: Value(condition),
       tagIds: validTagIds,
+      recordedAt: recordedAt ?? now, // 省略時は現在時刻
       createdAt: now,
       updatedAt: now,
     );
@@ -144,9 +148,11 @@ class TrackRepository {
   /// - memo: 新しいメモ（省略可）
   /// - condition: 新しいコンディション（省略可）
   /// - tagIds: 新しいタグIDリスト（省略可）
+  /// - recordedAt: 新しい記録日時（省略可、過去日時への変更可能）
   ///
   /// 処理:
   /// - updatedAtを現在時刻に更新
+  /// - 指定されたフィールドのみ更新
   /// - 存在しないタグIDは除外して保存
   ///
   /// 例外:
@@ -157,6 +163,7 @@ class TrackRepository {
     String? memo,
     int? condition,
     List<String>? tagIds,
+    DateTime? recordedAt,
   }) async {
     // 存在チェック
     final existing = await (_db.select(_db.tracks)..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -187,6 +194,7 @@ class TrackRepository {
       memo: memo != null ? Value(memo) : const Value.absent(),
       condition: condition != null ? Value(condition) : const Value.absent(),
       tagIds: validTagIds != null ? Value(validTagIds) : const Value.absent(),
+      recordedAt: recordedAt != null ? Value(recordedAt) : const Value.absent(),
       updatedAt: Value(DateTime.now().toUtc()),
     );
 

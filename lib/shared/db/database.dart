@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -57,11 +57,25 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS tag_category_id_idx ON tags(category_id);',
         );
         await customStatement(
-          'CREATE INDEX IF NOT EXISTS track_created_at_idx ON tracks(created_at);',
+          'CREATE INDEX IF NOT EXISTS track_recorded_at_idx ON tracks(recorded_at);',
         );
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // 将来のバージョンアップ時にマイグレーションを追加
+        if (from < 2) {
+          // version 2: recordedAt フィールド追加
+          await m.addColumn(tracks, tracks.recordedAt);
+
+          // 既存レコードの recordedAt に createdAt をコピー
+          await customStatement(
+            'UPDATE tracks SET recorded_at = created_at WHERE recorded_at IS NULL;',
+          );
+
+          // 古いインデックスを削除して新しいインデックスを作成
+          await customStatement('DROP INDEX IF EXISTS track_created_at_idx;');
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS track_recorded_at_idx ON tracks(recorded_at);',
+          );
+        }
       },
     );
   }

@@ -30,12 +30,11 @@ void main() {
   });
 
   group('TrackRepository', () {
-    test('searchTracks は createdAt 降順でソートされたリストを返す', () async {
-      await trackRepo.createTrack(memo: '1番目');
-      await Future.delayed(const Duration(milliseconds: 10));
-      await trackRepo.createTrack(memo: '2番目');
-      await Future.delayed(const Duration(milliseconds: 10));
-      await trackRepo.createTrack(memo: '3番目');
+    test('searchTracks は recordedAt 降順でソートされたリストを返す', () async {
+      final now = DateTime.now().toUtc();
+      await trackRepo.createTrack(memo: '1番目', recordedAt: now.subtract(const Duration(hours: 2)));
+      await trackRepo.createTrack(memo: '2番目', recordedAt: now.subtract(const Duration(hours: 1)));
+      await trackRepo.createTrack(memo: '3番目', recordedAt: now);
 
       final tracks = await trackRepo.searchTracks();
 
@@ -45,13 +44,11 @@ void main() {
       expect(tracks[2].memo, '1番目');
     });
 
-    // タイムスタンプ精度の問題でテストが不安定なためスキップ
     test('searchTracks は before パラメータでページングできる', () async {
-      await trackRepo.createTrack(memo: '1番目');
-      await Future.delayed(const Duration(milliseconds: 50));
-      await trackRepo.createTrack(memo: '2番目');
-      await Future.delayed(const Duration(milliseconds: 50));
-      await trackRepo.createTrack(memo: '3番目');
+      final now = DateTime.now().toUtc();
+      await trackRepo.createTrack(memo: '1番目', recordedAt: now.subtract(const Duration(hours: 3)));
+      await trackRepo.createTrack(memo: '2番目', recordedAt: now.subtract(const Duration(hours: 2)));
+      await trackRepo.createTrack(memo: '3番目', recordedAt: now.subtract(const Duration(hours: 1)));
 
       // 最新2件を取得
       final page1 = await trackRepo.searchTracks(limit: 2);
@@ -59,8 +56,11 @@ void main() {
       expect(page1[0].memo, '3番目');
       expect(page1[1].memo, '2番目');
 
-      // beforeパラメータの動作は実装済み（環境依存のため詳細テストはスキップ）
-    }, skip: 'タイムスタンプ精度の問題で環境依存');
+      // beforeパラメータで過去を遡る
+      final page2 = await trackRepo.searchTracks(limit: 2, before: page1.last.recordedAt);
+      expect(page2.length, 1);
+      expect(page2[0].memo, '1番目');
+    });
 
     test('searchTracks は memoKeyword でフィルタできる', () async {
       await trackRepo.createTrack(memo: '頭痛がひどい');

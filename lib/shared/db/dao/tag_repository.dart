@@ -222,17 +222,39 @@ class TagRepository {
     });
   }
 
-  /// タグを削除
+  /// タグを削除（アーカイブ画面でのみ実行可能）
   ///
   /// パラメータ:
   /// - id: 削除対象のタグID
   ///
+  /// 処理:
+  /// 1. 指定されたタグをTagsテーブルから削除
+  /// 2. 全Trackの tagIds から該当IDを即座にクリーンアップ
+  ///
   /// 例外:
   /// - NotFoundException: IDが存在しない
   Future<void> deleteTag(String id) async {
-    final count = await (_db.delete(_db.tags)..where((t) => t.id.equals(id))).go();
-    if (count == 0) {
-      throw NotFoundException('タグが見つかりません: $id');
-    }
+    // トランザクション内で削除とクリーンアップを実行
+    await _db.transaction(() async {
+      // 1. タグを削除
+      final count = await (_db.delete(_db.tags)..where((t) => t.id.equals(id))).go();
+      if (count == 0) {
+        throw NotFoundException('タグが見つかりません: $id');
+      }
+
+      // 2. 全Trackの tagIds から該当IDをクリーンアップ
+      final allTracks = await (_db.select(_db.tracks)).get();
+      for (final track in allTracks) {
+        if (track.tagIds.contains(id)) {
+          final newTagIds = track.tagIds.where((tagId) => tagId != id).toList();
+          await (_db.update(_db.tracks)..where((t) => t.id.equals(track.id))).write(
+            TracksCompanion(
+              tagIds: Value(newTagIds),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+        }
+      }
+    });
   }
 }

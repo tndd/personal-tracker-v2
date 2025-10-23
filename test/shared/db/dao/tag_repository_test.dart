@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:personal_tracker_v2/shared/db/database.dart';
 import 'package:personal_tracker_v2/shared/db/dao/category_repository.dart';
 import 'package:personal_tracker_v2/shared/db/dao/tag_repository.dart';
+import 'package:personal_tracker_v2/shared/db/dao/track_repository.dart';
 import 'package:personal_tracker_v2/shared/exceptions/repository_exceptions.dart';
 
 void main() {
@@ -145,6 +146,28 @@ void main() {
 
       final tags = await tagRepo.searchTags(categoryId: cat.id);
       expect(tags.length, 0);
+    });
+
+    test('deleteTag は全Trackから該当タグIDをクリーンアップする', () async {
+      final trackRepo = TrackRepository(db);
+      final cat = await categoryRepo.createCategory(name: '薬', color: '#3B82F6');
+      final tag1 = await tagRepo.createTag(categoryId: cat.id, name: 'デパス');
+      final tag2 = await tagRepo.createTag(categoryId: cat.id, name: 'ロキソニン');
+
+      // tag1とtag2を含むトラックを作成
+      final track = await trackRepo.createTrack(
+        memo: 'メモ',
+        tagIds: [tag1.id, tag2.id],
+      );
+      expect(track.tagIds.length, 2);
+
+      // tag1を削除
+      await tagRepo.deleteTag(tag1.id);
+
+      // trackのtagIdsからtag1が除外されていることを確認
+      final updated = (await trackRepo.searchTracks()).first;
+      expect(updated.tagIds.length, 1);
+      expect(updated.tagIds[0], tag2.id);
     });
 
     // CASCADE削除はデータベースレベルの機能だが、
