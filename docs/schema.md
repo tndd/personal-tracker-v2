@@ -105,7 +105,8 @@ class Tracks extends Table {
   TextColumn get memo => text().nullable()();
   IntColumn get condition => integer().withDefault(const Constant(0))();
   TextColumn get tagIds => text()(); // JSON配列として保存
-  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get recordedAt => dateTime()(); // 記録日時（ユーザー指定可能）
+  DateTimeColumn get createdAt => dateTime()(); // 作成日時（自動設定）
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
@@ -121,14 +122,17 @@ class Tracks extends Table {
 | `memo` | String? | TEXT | メモ内容（最大1000文字） |
 | `condition` | int | INTEGER | コンディション（-2〜2、デフォルト0） |
 | `tagIds` | List\<String\> | TEXT | タグIDのJSON配列 |
-| `createdAt` | DateTime | INTEGER | 記録日時（UTC、Unix timestamp） |
+| `recordedAt` | DateTime | INTEGER | 記録日時（UTC、ユーザーが記録した時刻） |
+| `createdAt` | DateTime | INTEGER | 作成日時（UTC、レコード作成時に自動設定） |
 | `updatedAt` | DateTime | INTEGER | 更新日時（UTC） |
 
 ### 補足仕様
 
-- `tagIds` に存在しないタグIDが含まれていても**エラーにせず無視**する
+- `tagIds` に存在しないタグIDが含まれていても**エラーにせず無視**する（削除済みタグは非表示）
 - `tagIds` は内部的にJSON文字列 `["id1","id2"]` として保存
-- `createdAt` がトラックの記録日時（ユーザーが記録した時刻）
+- `recordedAt` がトラックの記録日時（過去日時の設定可能、デフォルトは現在時刻）
+- `createdAt` はレコード作成時に自動設定（編集不可）
+- 時系列表示やページングは `recordedAt` を基準とする
 
 ---
 
@@ -183,6 +187,6 @@ class Dailies extends Table {
 // Tagのカテゴリ別検索用
 @TableIndex(name: 'tag_category_id_idx', columns: {#categoryId})
 
-// Trackの時系列検索用
-@TableIndex(name: 'track_created_at_idx', columns: {#createdAt})
+// Trackの時系列検索用（記録日時でソート）
+@TableIndex(name: 'track_recorded_at_idx', columns: {#recordedAt})
 ```

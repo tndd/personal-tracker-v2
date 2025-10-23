@@ -30,12 +30,25 @@ ListView.builder(
 ```
 
 ### UI要素
-- 各トラックカード:
-  - 記録日時（JST表示）
-  - メモ
-  - コンディション（-2〜2のアイコン表示）
-  - タグ（カテゴリ色付きチップ）
-  - 編集・削除ボタン
+
+#### 左サイドバー
+- **検索入力ボックス**: 「メモ・タグで検索」
+  - メモの部分一致検索
+  - 位置: Tagsメニューの下、コンディションフィルターの上
+- **コンディションフィルター**: 5つの円形ボタン（-2〜2）
+- **タグフィルター**: カテゴリごとにグループ化されたチェックボックスリスト
+
+#### 各トラックカード
+- 記録日時（JST表示、`recordedAt` を表示）
+- メモ
+- コンディション（-2〜2のアイコン表示）
+- タグ（カテゴリ色付きチップ、削除済みタグは非表示）
+- 編集・削除ボタン
+
+#### トラック作成/編集ダイアログ
+- 記録日時の選択UI（DateTimePicker）
+  - デフォルトは現在時刻
+  - 過去日時の設定可能
 
 ### 参考スクリーンショット
 `ui_images/track.png`
@@ -153,10 +166,17 @@ TableCalendar(
 - 各タグの上下矢印ボタンで1つずつ移動
 - アーカイブ表示をオンにして全タグを表示することを推奨
 
-### アーカイブ機能
-- 画面上部にトグルスイッチ
-- オン: アーカイブ済みを含む全て表示
-- オフ: 表示中のみ表示
+### ボタン配置
+
+#### 通常のTags画面
+- **カテゴリ**: 編集（ペン）、アーカイブボタン
+- **タグ**: 上下移動、編集（ペン）、アーカイブボタン
+
+#### アーカイブ画面
+- **画面遷移**: 左下の「Archived」リンクをクリック
+- **カテゴリ**: 編集（ペン）、レストア（復元アイコン ↶）、削除ボタン
+- **タグ**: レストア（復元アイコン ↶）、削除ボタン
+- **削除時の挙動**: 全Trackから該当タグIDを即座にクリーンアップ
 
 ### 参考スクリーンショット
 - メイン画面: `ui_images/tags.png`
@@ -320,17 +340,44 @@ for (tag in tags) {
 - 「7回 観測21件」= タグが付いた日が7日、翌日以降の観測データが21件
 
 **信頼係数の計算:**
-- 信用区間が基準平均（0）からどれだけ離れているかを%で表示
-- 100%: 信用区間が完全に基準から外れている（影響が明確）
-- 低い%: 信用区間が基準を含む（影響が不確実）
+```dart
+double calculateCredibility(double lowerBound, double upperBound, double baselineMean) {
+  // 信用区間が基準平均（0）を含まない場合は100%
+  if (upperBound < baselineMean || lowerBound > baselineMean) {
+    return 1.0; // 100%
+  }
+
+  // 信用区間の幅
+  double intervalWidth = upperBound - lowerBound;
+
+  // 基準平均との重なり部分
+  double overlapStart = max(lowerBound, baselineMean);
+  double overlapEnd = min(upperBound, baselineMean);
+  double overlapWidth = max(0, overlapEnd - overlapStart);
+
+  // 重ならない割合を信頼度とする
+  return 1.0 - (overlapWidth / intervalWidth);
+}
+```
+
+**データ不足の扱い:**
+- 観測数が3件未満の場合は「データ不足」として表示を抑制
+- UIに「このタグはデータが不足しています（観測: 2件）」と表示
 
 ---
 
 ### 実装ライブラリ
+
+**グラフ描画:**
 - `fl_chart` パッケージ
 - 積み上げ棒グラフ（BarChart）
 - 複合グラフ（BarChart + LineChart）
 - 横棒グラフ（LinearProgressIndicator / カスタムウィジェット）
+
+**統計計算:**
+- `dart:math`: sqrt, pow
+- `statistics ^1.2.0`: mean, standardDeviation
+- ベイズ推定は自前実装（`lib/domain/services/bayesian_estimator.dart`）
 
 ### 参考スクリーンショット
 - コンディション推移: `ui_images/analysis1.png`
