@@ -139,7 +139,7 @@ class _CategorySection extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.archive_outlined),
               onPressed: () {
-                // TODO: アーカイブ確認ダイアログ
+                ref.read(categoryNotifierProvider).archiveCategory(category.id);
               },
               tooltip: 'アーカイブ',
             ),
@@ -159,7 +159,11 @@ class _CategorySection extends ConsumerWidget {
                     }
                     return Column(
                       children: tags.map((tag) {
-                        return _TagItem(tag: tag, categoryColor: category.color);
+                        return _TagItem(
+                          tag: tag,
+                          categoryColor: category.color,
+                          categoryName: category.name,
+                        );
                       }).toList(),
                     );
                   },
@@ -200,17 +204,19 @@ class _CategorySection extends ConsumerWidget {
 }
 
 /// タグアイテム。
-class _TagItem extends StatelessWidget {
+class _TagItem extends ConsumerWidget {
   const _TagItem({
     required this.tag,
     required this.categoryColor,
+    required this.categoryName,
   });
 
   final TagRecord tag;
   final String categoryColor;
+  final String categoryName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = _parseColor(categoryColor);
 
     return Container(
@@ -232,7 +238,14 @@ class _TagItem extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 20),
             onPressed: () {
-              // TODO: タグ編集ダイアログ
+              showDialog(
+                context: context,
+                builder: (context) => TagDialog(
+                  categoryId: tag.categoryId,
+                  categoryName: categoryName,
+                  tag: tag,
+                ),
+              );
             },
             tooltip: '編集',
           ),
@@ -240,7 +253,8 @@ class _TagItem extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.archive_outlined, size: 20),
             onPressed: () {
-              // TODO: アーカイブ確認ダイアログ
+              final notifier = ref.read(tagListByCategoryProvider(tag.categoryId).notifier);
+              notifier.archiveTag(tag.id);
             },
             tooltip: 'アーカイブ',
           ),
