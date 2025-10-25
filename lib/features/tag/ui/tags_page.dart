@@ -6,6 +6,7 @@ import '../../../shared/db/database.dart';
 import '../../category/state/category_provider.dart';
 import '../../category/ui/category_dialog.dart';
 import '../state/tag_provider.dart';
+import '../state/selected_category_provider.dart';
 import 'tag_dialog.dart';
 
 /// Tags画面（カテゴリとタグの管理）。
@@ -24,6 +25,7 @@ class TagsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoryListProvider);
+    final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -62,15 +64,28 @@ class TagsPage extends ConsumerWidget {
                     child: Text('カテゴリがありません。\n右上のボタンから追加してください。'),
                   );
                 }
+
+                // 選択されたカテゴリでフィルタリング
+                final filteredCategories = selectedCategoryId == null
+                    ? categories
+                    : categories.where((c) => c.id == selectedCategoryId).toList();
+
+                if (filteredCategories.isEmpty) {
+                  return const Center(
+                    child: Text('選択されたカテゴリが見つかりません。'),
+                  );
+                }
+
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: categories.length,
+                  itemCount: filteredCategories.length,
                   itemBuilder: (context, index) {
+                    final category = filteredCategories[index];
                     final isFirst = index == 0;
-                    final isLast = index == categories.length - 1;
+                    final isLast = index == filteredCategories.length - 1;
 
                     return _CategorySection(
-                      category: categories[index],
+                      category: category,
                       isFirst: isFirst,
                       isLast: isLast,
                       onMoveUp: isFirst ? null : () {
@@ -136,6 +151,7 @@ class _CategorySection extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: ExpansionTile(
+        initiallyExpanded: true,
         leading: CircleAvatar(
           backgroundColor: _parseColor(category.color),
           radius: 12,
