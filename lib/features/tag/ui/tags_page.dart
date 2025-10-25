@@ -8,6 +8,7 @@ import '../../category/ui/category_dialog.dart';
 import '../state/tag_provider.dart';
 import '../state/selected_category_provider.dart';
 import 'tag_dialog.dart';
+import '../../../app/scaffold_with_nav.dart';
 
 /// Tags画面（カテゴリとタグの管理）。
 ///
@@ -26,9 +27,20 @@ class TagsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoryListProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
+    final isCompactLayout = ref.watch(isCompactLayoutProvider);
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: isCompactLayout
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                tooltip: 'メニュー',
+                onPressed: () {
+                  ref.read(navPanelVisibilityProvider.notifier).state = true;
+                },
+              )
+            : null,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
